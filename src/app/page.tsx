@@ -8,7 +8,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [dragActive, setDragActive] = useState<boolean>(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Explicit generic with null initial to ensure proper typing
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const validateFile = useCallback((file: File) => {
     if (file.type !== 'video/mp4') {
@@ -37,12 +38,13 @@ export default function HomePage() {
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    handleDrag(e, false);
+    e.preventDefault();
+    setDragActive(false);
     const dropped = e.dataTransfer.files?.[0];
     if (dropped) handleSelection(dropped);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!file) return;
     setLoading(true);
@@ -117,7 +119,7 @@ export default function HomePage() {
         >
           {loading ? (
             <svg
-              className="animate-spin h-6 w-6"
+              className="animate-spin h-6 w-6 text-white"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
