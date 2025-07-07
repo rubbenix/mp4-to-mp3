@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 
 export default function HomePage() {
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [downloadUrl, setDownloadUrl] = useState('');
   const [filename, setFilename] = useState('output.mp3');
   const [loading, setLoading] = useState(false);
@@ -10,7 +10,7 @@ export default function HomePage() {
   const dropRef = useRef(null);
   const inputRef = useRef(null);
 
-  const handleFile = (chosenFile) => {
+  const handleFile = (chosenFile: File) => {
     if (chosenFile && chosenFile.type === 'video/mp4') {
       setFile(chosenFile);
       setDownloadUrl('');
@@ -20,20 +20,20 @@ export default function HomePage() {
     }
   };
 
-  const handleFileChange = (e) => {
-    handleFile(e.target.files[0]);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFile(e.target.files![0]);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     handleFile(e.dataTransfer.files[0]);
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     if (!file) return;
     setLoading(true);
