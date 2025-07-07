@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 
 export default function HomePage() {
   const [file, setFile] = useState<File | null>(null);
@@ -7,34 +7,39 @@ export default function HomePage() {
   const [filename, setFilename] = useState<string>('output.mp3');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const dropRef = useRef<HTMLDivElement>(null);
+  const [dragActive, setDragActive] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (chosenFile: File) => {
-    if (chosenFile && chosenFile.type === 'video/mp4') {
-      setFile(chosenFile);
-      setDownloadUrl('');
-      setError('');
-    } else {
-      setError('Por favor selecciona un archivo MP4 válido.');
+  const validateFile = useCallback((file: File) => {
+    if (file.type !== 'video/mp4') {
+      setError('Formato no válido. Sube un MP4.');
+      return false;
     }
-  };
+    setError('');
+    return true;
+  }, []);
+
+  const handleSelection = useCallback((selected: File) => {
+    if (!validateFile(selected)) return;
+    setFile(selected);
+    setDownloadUrl('');
+    setFilename(selected.name.replace(/\.mp4$/i, '.mp3'));
+  }, [validateFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
-    }
+    const chosen = e.target.files?.[0];
+    if (chosen) handleSelection(chosen);
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>, active: boolean) => {
+    e.preventDefault();
+    setDragActive(active);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
+    handleDrag(e, false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) handleSelection(dropped);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,12 +48,15 @@ export default function HomePage() {
     setLoading(true);
     setError('');
 
-    const formData = new FormData();
-    formData.append('video', file);
-
     try {
-      const res = await fetch('/api/convert', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('Error en la conversión');
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const res = await fetch('/api/convert', {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) throw new Error('Conversión fallida');
 
       const disposition = res.headers.get('Content-Disposition');
       const match = disposition?.match(/filename="(.+)"/);
@@ -60,30 +68,34 @@ export default function HomePage() {
       setDownloadUrl(url);
     } catch (err) {
       console.error(err);
-      setError('Hubo un error al convertir');
+      setError('Error durante la conversión');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="bg-white p-6 rounded-2xl shadow-lg max-w-md w-full">
-        <h1 className="text-3xl font-semibold text-center mb-6 text-purple-700">MP4 a MP3</h1>
+    <main className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-100 to-white p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-3xl shadow-xl max-w-lg w-full flex flex-col items-center"
+      >
+        <h1 className="text-4xl font-bold mb-6 text-purple-700">MP4 → MP3</h1>
+
         <div
-          ref={dropRef}
-          onClick={() => inputRef.current?.click()}
-          onDragOver={handleDragOver}
+          onDragOver={(e) => handleDrag(e, true)}
+          onDragLeave={(e) => handleDrag(e, false)}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-            file ? 'border-purple-500 bg-purple-50' : 'border-gray-300 bg-white hover:bg-purple-50'
+          onClick={() => inputRef.current?.click()}
+          className={`w-full border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+            dragActive ? 'border-purple-600 bg-purple-50' : 'border-gray-300 hover:border-purple-500'
           }`}
         >
           {file ? (
-            <>
+            <div>
               <p className="font-medium text-gray-800">{file.name}</p>
-              <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-            </>
+              <p className="text-sm text-gray-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+            </div>
           ) : (
             <p className="text-gray-400">Arrastra tu MP4 aquí o haz clic para seleccionar</p>
           )}
@@ -95,15 +107,17 @@ export default function HomePage() {
             className="hidden"
           />
         </div>
-        {error && <p className="mt-4 text-red-600 text-center">{error}</p>}
+
+        {error && <p className="mt-4 text-red-600">{error}</p>}
+
         <button
-          onClick={handleSubmit}
+          type="submit"
           disabled={!file || loading}
-          className="mt-6 w-full flex items-center justify-center bg-purple-600 text-white py-2 rounded-lg disabled:opacity-50 transition-colors hover:bg-purple-700"
+          className="mt-6 w-full py-3 bg-purple-600 text-white rounded-xl flex items-center justify-center disabled:opacity-50 hover:bg-purple-700 transition"
         >
           {loading ? (
             <svg
-              className="animate-spin h-5 w-5 text-white"
+              className="animate-spin h-6 w-6"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -126,16 +140,17 @@ export default function HomePage() {
             'Convertir Ahora'
           )}
         </button>
+
         {downloadUrl && (
           <a
             href={downloadUrl}
             download={filename}
-            className="mt-4 block text-center text-purple-600 hover:underline"
+            className="mt-4 text-purple-600 hover:underline"
           >
             ⬇️ Descargar {filename}
           </a>
         )}
-      </div>
+      </form>
     </main>
   );
 }
