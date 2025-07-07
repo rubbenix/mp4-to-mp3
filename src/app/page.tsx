@@ -1,14 +1,14 @@
 'use client';
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 export default function HomePage() {
   const [file, setFile] = useState<File | null>(null);
-  const [downloadUrl, setDownloadUrl] = useState('');
-  const [filename, setFilename] = useState('output.mp3');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const dropRef = useRef(null);
-  const inputRef = useRef(null);
+  const [downloadUrl, setDownloadUrl] = useState<string>('');
+  const [filename, setFilename] = useState<string>('output.mp3');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const dropRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (chosenFile: File) => {
     if (chosenFile && chosenFile.type === 'video/mp4') {
@@ -21,19 +21,23 @@ export default function HomePage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFile(e.target.files![0]);
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const handleSubmit = async (e: { preventDefault: () => void; }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
     setLoading(true);
