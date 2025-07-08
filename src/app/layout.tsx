@@ -2,6 +2,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Script from 'next/script' // 👈 Importa Script
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,6 +33,7 @@ export default function RootLayout({
             gtag('config', 'G-8L8JZTC3BH');
           `}
         </Script>
+        <Analytics />
       </head>
       <body className={inter.className}>{children}</body>
     </html>
