@@ -6,8 +6,8 @@ import Script from 'next/script' // 👈 Importa Script
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Tu Título',
-  description: 'Tu descripción',
+  title: 'MP4 a MP3',
+  description: 'Analytics de google',
 }
 
 export default function RootLayout({
