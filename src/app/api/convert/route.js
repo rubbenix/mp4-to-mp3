@@ -9,6 +9,12 @@ export async function POST(request) {
     console.log('🔄 Nueva petición de conversión');
     const formData = await request.formData();
     const file = formData.get('video');
+    const quality = formData.get('quality') || 'medium';
+
+    let bitrate = '128k';
+    if (quality === 'high') bitrate = '320k';
+    if (quality === 'low') bitrate = '64k';
+
     if (!file) {
       console.error('❌ No se recibió ningún archivo');
       return new Response('No file uploaded', { status: 400 });
@@ -21,7 +27,7 @@ export async function POST(request) {
     await fs.promises.mkdir(tmpDir, { recursive: true });
 
     const timestamp = Date.now();
-    const safeName  = `${timestamp}-${file.name.replace(/\W+/g, '_')}`;
+    const safeName = `${timestamp}-${file.name.replace(/\W+/g, '_')}`;
     const inputPath = path.join(tmpDir, safeName);
     const outputPath = `${inputPath}.mp3`;
 
@@ -33,7 +39,7 @@ export async function POST(request) {
     await new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .audioCodec('libmp3lame')
-        .audioBitrate('128k')
+        .audioBitrate(bitrate)
         .format('mp3')
         .on('start', cmd => console.log('FFmpeg arrancó con:', cmd))
         .on('error', err => {
